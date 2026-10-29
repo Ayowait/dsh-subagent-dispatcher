@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-79e5bd.svg)](LICENSE)
 [![DSH-Plugin](https://img.shields.io/badge/DeepSeek%20Harness-Plugin-blue.svg)](https://github.com)
-[![Version](https://img.shields.io/badge/version-1.0.0-orange.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-1.0.1-orange.svg)](package.json)
 
 > 🚀 **DeepSeek Harness (DSH)** plugin for smart subagent task delegation and automated acceptance verification. Offload low-complexity, scoped, or repetitive tasks to lightweight subagents to prevent context bloating and **save 70% ~ 90% tokens and reasoning costs**!
 
@@ -37,7 +37,7 @@ When handling **routine, scoped, or low-complexity tasks** (such as writing unit
 1. **Task Dispatching**: Main Agent delegates routine subtasks to a Worker subagent via `dispatch_task`.
 2. **Context Isolation**: The Worker runs within a completely isolated temporary session sandbox. Raw exploratory traces and bash logs **never leak into the parent conversation**.
 3. **Reasoning Effort Downgrade**: Subagent runs with low reasoning effort (`low` or `off`), or utilizes a fast and cost-effective model (such as `deepseek-chat` / V3, `gpt-4.1-mini`).
-4. **Automated Acceptance & Verification**: Upon completion, the plugin automatically inspects file integrity, runs verification commands (e.g. `npm test`), and verifies acceptance criteria. Deficiencies trigger an in-sandbox revision loop.
+4. **Automated Acceptance & Verification**: Upon confirming subagent completion via `waitForChildren`, the plugin automatically inspects file presence, runs deterministic verification commands (e.g. `npm test`), and validates acceptance criteria.
 5. **Condensed Delivery**: Only structured, high-signal results return to the primary agent.
 
 ---
@@ -52,20 +52,18 @@ flowchart TD
 
     C --> E["Spawn Lightweight Worker Subagent<br/>· Isolated Session Sandbox<br/>· Low Reasoning Effort (low / off)"]
     E --> F[Worker executes edits & actions in workspace]
-    F --> G["Automated Acceptance Phase"]
+    F --> W["Await Worker Completion (waitForChildren)"]
+    W --> G["Automated Acceptance Phase"]
 
     G --> H1{"Expected files exist & non-empty?"}
-    H1 -- No --> K[Collect Rejection Feedback]
+    H1 -- No --> O["⚠️ Acceptance Unmet (Flag Missing)"]
     H1 -- Yes --> H2{"Verification command passes?<br/>(e.g., npm test, python test.py)"}
-    H2 -- Fail --> K
+    H2 -- Fail --> O
     H2 -- Pass --> H3{"Acceptance criteria satisfied?"}
-    H3 -- No --> K
+    H3 -- No --> O
     H3 -- Yes --> L["✅ Acceptance Passed (Accepted)"]
 
-    K --> M{Retries remaining < max_retries ?}
-    M -- Yes --> N["In-sandbox revision with failure logs"] --> F
-    M -- No --> O["⚠️ Report review needed"] --> P[Notify Main Agent]
-
+    O --> P[Report to Main Agent for Review]
     L --> P["Deliver condensed report to Main Agent<br/>(A few hundred tokens vs tens of thousands!)"]
 ```
 
@@ -147,7 +145,7 @@ Customizable options in `cordis.patch.yml`:
 | `expected_files` | `array` | No | List of relative file paths expected to be created or modified (e.g. `["src/util.js"]`). |
 | `model` | `string` | No | Optional lightweight model for the worker (e.g. `deepseek-chat`, `gpt-4.1-mini`). |
 | `reasoning_effort` | `string` | No | Reasoning effort level (default `low`, can be `off`). |
-| `max_retries` | `number` | No | Maximum revision rounds if acceptance fails (default `2`). |
+| `max_retries` | `number` | No | Maximum retry rounds if acceptance fails (defaults to the `maxRounds` config, i.e. `3`). |
 
 ---
 
