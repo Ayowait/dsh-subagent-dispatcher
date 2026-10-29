@@ -1,0 +1,11 @@
+node_modules/
+*.bak-*
+*.candidate.js
+*.map
+_backups/
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
