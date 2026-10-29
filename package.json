@@ -1,6 +1,6 @@
 {
   "name": "dsh-task-dispatcher",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Task delegation and automated acceptance verification plugin for DeepSeek Harness to drastically save tokens and prevent context window bloating.",
   "type": "module",
   "main": "lib/index.js",
