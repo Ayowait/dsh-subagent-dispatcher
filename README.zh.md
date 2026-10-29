@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-79e5bd.svg)](LICENSE)
 [![DSH-Plugin](https://img.shields.io/badge/DeepSeek%20Harness-Plugin-blue.svg)](https://github.com)
-[![Version](https://img.shields.io/badge/version-1.0.0-orange.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-1.0.1-orange.svg)](package.json)
 
 > 🚀 **DeepSeek Harness (DSH)** 专属智能分发与验收插件：将简单或繁琐任务交给轻量子 Agent 独立完成并自动化验收，隔绝主会话上下文污染，**节省高达 70% ~ 90% 的主会话 Token 与推理开销**！
 
@@ -37,8 +37,8 @@
 1. **任务分发 (Dispatch)**：主 Agent 将局部小任务分发给 Worker 子 Agent。
 2. **上下文隔离 (Context Isolation)**：子 Agent 在完全独立的临时沙箱会话中执行所有试错与读写，中间成千上万 Token 的调试过程**绝不进入主会话**。
 3. **推理强度降级 (Low Reasoning Effort)**：子 Agent 默认采用 `low` 或 `off` 档位，或使用便宜轻量的模型，大幅斩断思考 Token。
-4. **自动化验收闭环 (Acceptance & Verification)**：子 Agent 交付后，插件自动校验文件完整性、运行自动化测试命令（如 `npm test`）、核对验收标准；不达标时自动在沙箱内打回修正。
-5. **浓缩汇报 (Clean Handoff)**：验收通过后，仅向主会话回传精简报告。
+4. **自动化验收判定 (Acceptance & Verification)**：在确认子 Agent 真正执行完成后，插件自动核验预期文件存在与完整性、执行自动化测试命令（如 `npm test`），杜绝未经测试的代码直接交付。
+5. **浓缩汇报 (Clean Handoff)**：仅向主会话回传精简报告与验收结论，主上下文不被冗余日志污染。
 
 ---
 
@@ -52,20 +52,18 @@ flowchart TD
 
     C --> E["启动轻量子 Agent (Worker)<br/>· 独立临时会话沙箱<br/>· 推理强度降级 (low / off)"]
     E --> F[子 Agent 在工作区执行修改与编写]
-    F --> G["自动化验收阶段 (Acceptance Check)"]
+    F --> W["等待子 Agent 执行完毕 (waitForChildren)"]
+    W --> G["自动化验收阶段 (Acceptance Check)"]
 
     G --> H1{"预期文件是否存在且非空？"}
-    H1 -- 否 --> K[捕获未满足项]
+    H1 -- 否 --> O["⚠️ 验收未通过 (标记缺失项)"]
     H1 -- 是 --> H2{"验证命令是否通过？<br/>(如 npm test, python test.py)"}
-    H2 -- 失败 --> K
+    H2 -- 失败 --> O
     H2 -- 通过 --> H3{"是否满足验收准则？"}
-    H3 -- 否 --> K
+    H3 -- 否 --> O
     H3 -- 是 --> L["✅ 验收全部通过 (Accepted)"]
 
-    K --> M{重试次数 < max_retries ?}
-    M -- 是 --> N["沙箱内打回让子 Agent 自动修复"] --> F
-    M -- 否 --> O["⚠️ 提交异常情况报告"] --> P[汇报主 Agent]
-
+    O --> P[汇报主 Agent 审查]
     L --> P["交付浓缩验收报告给主 Agent<br/>(仅占几百 Token，省下数万 Token！)"]
 ```
 
@@ -147,7 +145,7 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 | `expected_files` | `array` | 否 | 预期新建或修改的文件列表（如 `["src/util.js", "tests/util.test.js"]`），插件自动校验其完整性。 |
 | `model` | `string` | 否 | 指定子 Agent 使用的低成本轻量模型（如 `deepseek-chat` / `gpt-4.1-mini`，留空继承默认）。 |
 | `reasoning_effort` | `string` | 否 | 推理强度（默认 `low`，可设为 `off`），强力裁剪思考 Token。 |
-| `max_retries` | `number` | 否 | 验收未通过时自动在沙箱中重试修正的上限轮次（默认 `2`）。 |
+| `max_retries` | `number` | 否 | 验收未通过时自动重试修正的上限轮次（默认继承配置 `maxRounds`，即 `3`）。 |
 
 ---
 
