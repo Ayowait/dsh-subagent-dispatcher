@@ -1,0 +1,43 @@
+{
+  "name": "dsh-task-dispatcher",
+  "version": "1.0.0",
+  "description": "Task delegation and automated acceptance verification plugin for DeepSeek Harness to drastically save tokens and prevent context window bloating.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "src",
+    "install.ps1"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek",
+    "deepseek-harness",
+    "subagent",
+    "task-dispatcher",
+    "token-saving",
+    "acceptance",
+    "cordis"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test test/dispatcher.test.js",
+    "install:dsh": "powershell -ExecutionPolicy Bypass -File install.ps1"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
