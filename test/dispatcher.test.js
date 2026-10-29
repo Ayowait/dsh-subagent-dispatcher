@@ -36,6 +36,39 @@ function assertHarnessCompatibleSchema(schema, path = 'schema') {
   }
 }
 
+/**
+ * Mirrors the host's runtime output validation (`createSuccessResult`):
+ *   validateJsonSchemaValue(tool.output.schema, value)
+ * A failure here is exactly what makes the host throw `ToolOutputError` after a
+ * successful tool call, so this guards the schema-vs-return-value contract.
+ */
+function assertValueMatchesSchema(schema, value, path = 'value') {
+  const typeOk = {
+    string: (v) => typeof v === 'string',
+    number: (v) => typeof v === 'number',
+    boolean: (v) => typeof v === 'boolean',
+    array: (v) => Array.isArray(v),
+    object: (v) => v !== null && typeof v === 'object' && !Array.isArray(v),
+  };
+  assert.ok(typeOk[schema.type]?.(value), `${path} is not of type ${schema.type} (got ${JSON.stringify(value)})`);
+  if (schema.type === 'object') {
+    for (const req of schema.required ?? []) {
+      assert.ok(Object.hasOwn(value, req), `missing required property "${path}.${req}"`);
+    }
+    if (schema.additionalProperties === false) {
+      for (const k of Object.keys(value)) {
+        assert.ok(k in schema.properties, `"${path}.${k}" is not a declared property`);
+      }
+    }
+    for (const [k, child] of Object.entries(schema.properties)) {
+      if (Object.hasOwn(value, k)) assertValueMatchesSchema(child, value[k], `${path}.${k}`);
+    }
+  }
+  if (schema.type === 'array') {
+    value.forEach((item, i) => assertValueMatchesSchema(schema.items, item, `${path}[${i}]`));
+  }
+}
+
 describe('dsh-task-dispatcher plugin test suite', () => {
   it('should export correct plugin metadata', () => {
     assert.strictEqual(name, 'dsh-task-dispatcher');
@@ -89,17 +122,18 @@ describe('dsh-task-dispatcher plugin test suite', () => {
     assertHarnessCompatibleSchema(registeredTool.output.schema, 'output.schema');
     assert.deepStrictEqual(
       [...registeredTool.output.schema.required].sort(),
-      ['deliverables', 'status', 'summary', 'token_savings', 'verification'],
+      ['criteriaCheck', 'deliverables', 'filesModified', 'roundsUsed', 'status', 'summary', 'tokenSavings', 'verificationResult'],
     );
     assert.strictEqual(typeof registeredTool.output.render, 'function');
     const blocks = registeredTool.output.render({}, {
       status: 'accepted',
       summary: 'done',
       deliverables: 'f.js',
-      verification: 'ok',
-      token_savings: 'saved',
       filesModified: ['f.js'],
+      verificationResult: 'ok',
+      criteriaCheck: 'met',
       roundsUsed: 1,
+      tokenSavings: 'saved',
     });
     assert.ok(Array.isArray(blocks));
     assert.strictEqual(blocks[0].type, 'text');
@@ -111,7 +145,7 @@ describe('dsh-task-dispatcher plugin test suite', () => {
     assert.strictEqual(call.kind, 'other');
   });
 
-  it('should execute automated checks and verification commands', async () => {
+  it('should throw clear error when subagents service is missing', async () => {
     let registeredTool = null;
     const mockCtx = {
       tools: { register: (tool) => { registeredTool = tool; } },
@@ -120,26 +154,18 @@ describe('dsh-task-dispatcher plugin test suite', () => {
 
     apply(mockCtx);
 
-    const testFile = resolve(process.cwd(), 'temp-verify-test.txt');
-    writeFileSync(testFile, 'hello verification', 'utf8');
-
-    try {
-      const mockExec = { agent: { cwd: process.cwd() } };
-      const result = await registeredTool.execute(
-        {
-          task: '测试局部文件与命令验证',
-          expected_files: ['temp-verify-test.txt'],
-          verification_command: 'node -e "process.exit(0)"',
-        },
-        mockExec,
-      );
-
-      assert.strictEqual(result.status, 'accepted');
-      assert.ok(result.verificationResult.includes('执行成功'));
-      assert.ok(result.tokenSavings.includes('节省'));
-    } finally {
-      if (existsSync(testFile)) unlinkSync(testFile);
-    }
+    const mockExec = { agent: { cwd: process.cwd() } };
+    await assert.rejects(
+      async () => {
+        await registeredTool.execute(
+          {
+            task: '测试缺少服务时报错',
+          },
+          mockExec,
+        );
+      },
+      /缺少 subagents 服务/,
+    );
   });
 
   it('should dispatch to a subagent, wait for it, then verify', async () => {
@@ -185,6 +211,52 @@ describe('dsh-task-dispatcher plugin test suite', () => {
       assert.ok(Array.isArray(calls.args.request.prompt));
       assert.strictEqual(calls.args.request.agentOptions.reasoningEffort, 'low');
       assert.strictEqual(result.status, 'accepted');
+      // 返回对象必须通过 output.schema 校验（否则宿主抛 ToolOutputError）
+      assertValueMatchesSchema(registeredTool.output.schema, result);
+      assert.strictEqual(typeof result.verificationResult, 'string');
+      assert.strictEqual(typeof result.tokenSavings, 'string');
+    } finally {
+      if (existsSync(testFile)) unlinkSync(testFile);
+    }
+  });
+
+  it('should retry with feedback when the first attempt fails acceptance', async () => {
+    let registeredTool = null;
+    const prompts = [];
+    let attempt = 0;
+    const fileName = 'temp-retry-test.txt';
+    const testFile = resolve(process.cwd(), fileName);
+    if (existsSync(testFile)) unlinkSync(testFile);
+
+    const mockCtx = {
+      tools: { register: (tool) => { registeredTool = tool; } },
+      systemPrompt: { section: () => {}, getSectionOrder: () => 2800 },
+      logger: { info: () => {}, warn: () => {} },
+      subagents: {
+        getProvider: () => ({ capabilities: { agentOptions: true } }),
+        startActivation: async (spec) => {
+          attempt += 1;
+          prompts.push(spec.request.prompt[0].text);
+          // 第 2 轮才把文件写出来，模拟第 1 轮交付不合格
+          if (attempt >= 2) writeFileSync(testFile, 'fixed', 'utf8');
+          return { childId: `child-${attempt}` };
+        },
+        waitForChildren: async () => true,
+      },
+    };
+
+    apply(mockCtx, { maxRounds: 1 });
+    try {
+      const result = await registeredTool.execute(
+        { task: '写一个文件（第一轮故意不写）', expected_files: [fileName], max_retries: 1 },
+        { agent: { cwd: process.cwd() } },
+      );
+
+      assert.strictEqual(attempt, 2, '应在首次失败后重试一次');
+      assert.strictEqual(result.roundsUsed, 2);
+      assert.strictEqual(result.status, 'accepted');
+      assert.ok(prompts[1].includes('验收未通过'), '第二轮提示词应包含失败反馈');
+      assertValueMatchesSchema(registeredTool.output.schema, result);
     } finally {
       if (existsSync(testFile)) unlinkSync(testFile);
     }
