@@ -1,8 +1,8 @@
-# dsh-task-dispatcher
+# dsh-subagent-dispatcher
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-79e5bd.svg)](LICENSE)
 [![DSH-Plugin](https://img.shields.io/badge/DeepSeek%20Harness-Plugin-blue.svg)](https://github.com)
-[![Version](https://img.shields.io/badge/version-1.0.1-orange.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-1.1.0-orange.svg)](package.json)
 
 > 🚀 **DeepSeek Harness (DSH)** plugin for smart subagent task delegation and automated acceptance verification. Offload low-complexity, scoped, or repetitive tasks to lightweight subagents to prevent context bloating and **save 70% ~ 90% tokens and reasoning costs**!
 
@@ -33,7 +33,7 @@ When handling **routine, scoped, or low-complexity tasks** (such as writing unit
 
 ### 🌟 Solution
 
-`dsh-task-dispatcher` establishes a clean delegation & acceptance loop:
+`dsh-subagent-dispatcher` establishes a clean delegation & acceptance loop:
 1. **Task Dispatching**: Main Agent delegates routine subtasks to a Worker subagent via `dispatch_task`.
 2. **Context Isolation**: The Worker runs within a completely isolated temporary session sandbox. Raw exploratory traces and bash logs **never leak into the parent conversation**.
 3. **Reasoning Effort Downgrade**: Subagent runs with low reasoning effort (`low` or `off`), or utilizes a fast and cost-effective model (such as `deepseek-chat` / V3, `gpt-4.1-mini`).
@@ -71,6 +71,9 @@ flowchart TD
 
 ## 🚀 Quick Start & Installation
 
+> **Install from the plugin catalog / npm**: `dsh plugin add dsh-subagent-dispatcher`
+> **Install directly from GitHub**: `dsh plugin add github:Ayowait/dsh-subagent-dispatcher`
+
 ### Option 1: One-click PowerShell Installer (Recommended)
 
 Open a PowerShell terminal in this plugin directory:
@@ -80,7 +83,7 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
 > **Automated Operations**:
-> 1. Injects `dsh-task-dispatcher` as a `link:` dependency and bundle into `~/.dsh/profiles/desktop/package.json`.
+> 1. Injects `dsh-subagent-dispatcher` as a `link:` dependency and bundle into `~/.dsh/profiles/desktop/package.json`.
 > 2. Appends configuration into `cordis.patch.yml`.
 > 3. Creates automated timestamped backups (`.bak`).
 
@@ -94,12 +97,12 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
    ```json
    {
      "dependencies": {
-       "dsh-task-dispatcher": "link:/absolute/path/to/dsh-task-dispatcher"
+       "dsh-subagent-dispatcher": "link:/absolute/path/to/dsh-subagent-dispatcher"
      },
      "dsh": {
        "profile": {
          "bundles": [
-           "dsh-task-dispatcher"
+           "dsh-subagent-dispatcher"
          ]
        }
      }
@@ -107,8 +110,8 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
    ```
 2. Append into the profile's `cordis.patch.yml` (`~/.dsh/profiles/desktop/cordis.patch.yml`):
    ```yaml
-   - id: dsh-task-dispatcher
-     name: dsh-task-dispatcher
+   - id: dsh-subagent-dispatcher
+     name: dsh-subagent-dispatcher
      config:
        toolName: dispatch_task
        defaultReasoningEffort: low
