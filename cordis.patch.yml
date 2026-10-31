@@ -1,8 +1,8 @@
 # DeepSeek Harness - Task Dispatcher & Acceptance Verifier
 # Provider-aware subagent delegation and automated acceptance verification.
 - insert:
-    - id: dsh-task-dispatcher
-      name: dsh-task-dispatcher
+    - id: dsh-subagent-dispatcher
+      name: dsh-subagent-dispatcher
       config:
         toolName: dispatch_task
         defaultReasoningEffort: low
