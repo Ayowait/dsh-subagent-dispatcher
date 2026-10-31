@@ -1,5 +1,5 @@
 /**
- * Main plugin source for dsh-task-dispatcher
+ * Main plugin source for dsh-subagent-dispatcher
  */
 
 export * from './types.js';
