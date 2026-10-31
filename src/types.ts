@@ -1,5 +1,5 @@
 /**
- * Types & Schema definitions for dsh-task-dispatcher
+ * Types & Schema definitions for dsh-subagent-dispatcher
  */
 
 export interface TaskDispatcherConfig {
