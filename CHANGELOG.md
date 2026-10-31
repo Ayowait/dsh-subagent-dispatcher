@@ -1,9 +1,16 @@
 # Changelog
 
-All notable changes to `dsh-task-dispatcher` will be documented in this file.
+All notable changes to `dsh-subagent-dispatcher` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.1.0] - 2026-10-31
+
+### Changed
+- **重命名：`dsh-task-dispatcher` → `dsh-subagent-dispatcher`**。原名称与另一位作者的插件（`zhengjy01/dsh-task-dispatcher`，基于滴答清单的每日任务调度器）重名，且该名称在 npm 上已被其占用。为彻底避免混淆与误装，本项目更名。
+- 跟随更名更新：`package.json` 包名、`cordis.patch.yml` 的 `id`/`name`、`export const name`、系统提示词标识、`install.ps1` 的 `$PluginName`、README / README.zh 的标题与安装命令、`src/*` 与测试文件中的标识。
+- **安装方式**：`dsh plugin add github:Ayowait/dsh-subagent-dispatcher`（或直接 `dsh plugin add dsh-subagent-dispatcher`，npm 包名现已归本项目所有）。
 
 ## [1.0.1] - 2026-10-29
 
@@ -25,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-10-29
 
 ### Added
-- **Initial Release of `dsh-task-dispatcher`** for DeepSeek Harness (DSH).
+- **Initial Release of `dsh-subagent-dispatcher`** for DeepSeek Harness (DSH).
 - **Core Dispatch Tool (`dispatch_task`)**:
   - Automatically offload scoped, low-complexity, or routine tasks to isolated sub-agents.
   - Supports configurable parameters: `task`, `acceptance_criteria`, `verification_command`, `expected_files`, `model`, `reasoning_effort`, `max_retries`.
