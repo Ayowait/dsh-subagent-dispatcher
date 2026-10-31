@@ -2,7 +2,7 @@
 .SYNOPSIS
     DeepSeek Harness (DSH) 任务分发与验收插件一键安装脚本
 .DESCRIPTION
-    将当前目录的 dsh-task-dispatcher 以 link 形式注册到 DSH Desktop Profile 中，并写入 cordis.patch 配置。
+    将当前目录的 dsh-subagent-dispatcher 以 link 形式注册到 DSH Desktop Profile 中，并写入 cordis.patch 配置。
 .PARAMETER Uninstall
     如果指定该开关，则从 Profile 中卸载并恢复配置。
 #>
@@ -13,7 +13,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$PluginName = "dsh-task-dispatcher"
+$PluginName = "dsh-subagent-dispatcher"
 $PluginPath = (Get-Item $PSScriptRoot).FullName -replace '\\', '/'
 
 Write-Host "==========================================================" -ForegroundColor Cyan
