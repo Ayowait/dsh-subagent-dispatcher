@@ -1,8 +1,8 @@
-# dsh-task-dispatcher (任务分发与自动化验收插件)
+# dsh-subagent-dispatcher (任务分发与自动化验收插件)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-79e5bd.svg)](LICENSE)
 [![DSH-Plugin](https://img.shields.io/badge/DeepSeek%20Harness-Plugin-blue.svg)](https://github.com)
-[![Version](https://img.shields.io/badge/version-1.0.1-orange.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-1.1.0-orange.svg)](package.json)
 
 > 🚀 **DeepSeek Harness (DSH)** 专属智能分发与验收插件：将简单或繁琐任务交给轻量子 Agent 独立完成并自动化验收，隔绝主会话上下文污染，**节省高达 70% ~ 90% 的主会话 Token 与推理开销**！
 
@@ -33,7 +33,7 @@
 
 ### 🌟 解决方案
 
-`dsh-task-dispatcher` 引入任务分发机制：
+`dsh-subagent-dispatcher` 引入任务分发机制：
 1. **任务分发 (Dispatch)**：主 Agent 将局部小任务分发给 Worker 子 Agent。
 2. **上下文隔离 (Context Isolation)**：子 Agent 在完全独立的临时沙箱会话中执行所有试错与读写，中间成千上万 Token 的调试过程**绝不进入主会话**。
 3. **推理强度降级 (Low Reasoning Effort)**：子 Agent 默认采用 `low` 或 `off` 档位，或使用便宜轻量的模型，大幅斩断思考 Token。
@@ -71,6 +71,9 @@ flowchart TD
 
 ## 🚀 快速安装与启用
 
+> **从插件目录 / npm 安装**：`dsh plugin add dsh-subagent-dispatcher`
+> **直接从 GitHub 安装**：`dsh plugin add github:Ayowait/dsh-subagent-dispatcher`
+
 ### 方式一：一键脚本安装 (推荐)
 
 在当前插件目录打开 PowerShell 终端：
@@ -81,7 +84,7 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 
 > **自动化操作**：
 > 1. 自动将当前插件以 `link:` 形式挂载到 `~/.dsh/profiles/desktop/package.json` 的 `dependencies` 与 `bundles`。
-> 2. 自动在 `cordis.patch.yml` 中追加 `dsh-task-dispatcher` 配置。
+> 2. 自动在 `cordis.patch.yml` 中追加 `dsh-subagent-dispatcher` 配置。
 > 3. 自动生成备份文件（`.bak`）。
 
 **安装完成后，重启 DeepSeek Harness 客户端即可生效！**
@@ -94,12 +97,12 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
    ```json
    {
      "dependencies": {
-       "dsh-task-dispatcher": "link:/你的绝对路径/dsh-task-dispatcher"
+       "dsh-subagent-dispatcher": "link:/你的绝对路径/dsh-subagent-dispatcher"
      },
      "dsh": {
        "profile": {
          "bundles": [
-           "dsh-task-dispatcher"
+           "dsh-subagent-dispatcher"
          ]
        }
      }
@@ -107,8 +110,8 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
    ```
 2. 在 Profile 的 `cordis.patch.yml`（`~/.dsh/profiles/desktop/cordis.patch.yml`）中追加：
    ```yaml
-   - id: dsh-task-dispatcher
-     name: dsh-task-dispatcher
+   - id: dsh-subagent-dispatcher
+     name: dsh-subagent-dispatcher
      config:
        toolName: dispatch_task
        defaultReasoningEffort: low
