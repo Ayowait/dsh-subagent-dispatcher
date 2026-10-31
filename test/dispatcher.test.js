@@ -69,9 +69,9 @@ function assertValueMatchesSchema(schema, value, path = 'value') {
   }
 }
 
-describe('dsh-task-dispatcher plugin test suite', () => {
+describe('dsh-subagent-dispatcher plugin test suite', () => {
   it('should export correct plugin metadata', () => {
-    assert.strictEqual(name, 'dsh-task-dispatcher');
+    assert.strictEqual(name, 'dsh-subagent-dispatcher');
     assert.deepStrictEqual(inject, ['tools', 'systemPrompt', 'subagents']);
     assert.strictEqual(typeof apply, 'function');
   });
